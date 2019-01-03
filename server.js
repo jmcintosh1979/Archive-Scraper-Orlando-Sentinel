@@ -29,26 +29,31 @@ mongoose.connect("mongodb://localhost/scrapeOS", { useNewUrlParser: true });
 
 // Routes
 
+// Route to Scrape the Orlando Sentinel website
 app.get("/scrape", function(req, res) {
   axios.get("https://www.orlandosentinel.com").then(function(response) {
     var $ = cheerio.load(response.data);
 
     $("li.trb_outfit_group_list_item").each(function(i, element) {
 
-      var result = {};
+      var title = $(this).children("section").children("h3").text();
+      var para = $(this).children("section").children("p").text();
+      var link = $(this).children("a").attr("href");
 
-      result.title = $(this).children("section").children("h3").text();
-      result.para = $(this).children("section").children("p").text();
-      result.link = $(this).children("a").attr("href");
-      
-      db.Article.create(result)
-        .then(function(dbArticle) {
-
-          console.log(dbArticle);
+      if (title && para && link) {
+        db.Article.create({
+          title: title,
+          para: para,
+          link: link
         })
-        .catch(function(err) {
-          return res.json(err);
-        });
+          .then(function(dbArticle) {
+
+            console.log(dbArticle);
+          })
+          .catch(function(err) {
+            return res.json(err);
+          });
+        };
     });
     res.send("Scrape Complete");
   });
@@ -56,17 +61,58 @@ app.get("/scrape", function(req, res) {
 
 // Route for getting all Articles from the db
 app.get("/articles", function(req, res) {
-  // Grab every document in the Articles collection
   db.Article.find({})
     .then(function(dbArticle) {
-      // If we were able to successfully find Articles, send them back to the client
       res.json(dbArticle);
     })
     .catch(function(err) {
-      // If an error occurred, send it to the client
       res.json(err);
     });
 });
+
+// Route for getting an Article by ID
+app.get("/articles/:id", function(req, res) {
+  db.Article.findOne({ _id: req.params.id })
+    .populate("note")
+    .then(function(dbArticle) {
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+// Route to add a Note to an Article
+app.post("/articles/:id", function(req, res) {
+  db.Note.create(req.body)
+  .then(function(dbNote) {
+    return db.Article.findOneAndUpdate(
+      {_id: req.params.id},
+      {note: dbNote._id},
+      {new: true}
+    );
+  })
+  .then(function(dbArticle) {
+    res.json(dbArticle);
+  })
+  .catch(function(err) {
+    res.json(err)
+  });
+});
+
+
+
+// Route to delete a Note attached to an Article
+app.get("/articles/delete/:id", function(req, res) {
+  db.Note.deleteOne({ _id: req.params.id }, function(err, deleted) {
+    if (err) {
+      res.send(err);
+    } else {
+      res.send(deleted)
+    }
+  })
+})
+
 
 // Start the server
 app.listen(PORT, function() {
