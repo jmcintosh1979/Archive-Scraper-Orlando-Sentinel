@@ -4,7 +4,17 @@ const express = require("express"),
       axios = require("axios"),
       cheerio = require("cheerio")
 
-      // Routes
+// Render the homepage
+router.get("/", function(req, res) {
+  db.Article.find({})
+    .populate("note")
+    .then(function(dbArticle) {
+      res.render("index", {article:dbArticle})
+    })
+    .catch(function(err) {
+      res.json(err)
+    })
+});
 
 // Route to Scrape the Orlando Sentinel website
 router.get("/scrape", function(req, res) {
@@ -36,19 +46,8 @@ router.get("/scrape", function(req, res) {
   });
 });
 
-// Home page if Articles exist
-router.get("/", function(req, res) {
-  db.Article.find({})
-    .then(function(dbArticle) {
-      res.json(dbArticle);
-    })
-    .catch(function(err) {
-      res.json(err);
-    });
-});
-
 // Route for getting all Articles from the db
-router.get("/articles", function(req, res) {
+router.get("/api/articles", function(req, res) {
   db.Article.find({})
     .then(function(dbArticle) {
       res.json(dbArticle);
@@ -59,7 +58,7 @@ router.get("/articles", function(req, res) {
 });
 
 // Route for getting an Article by ID
-router.get("/articles/:id", function(req, res) {
+router.get("/api/articles/:id", function(req, res) {
   db.Article.findOne({ _id: req.params.id })
     .populate("note")
     .then(function(dbArticle) {
@@ -71,12 +70,12 @@ router.get("/articles/:id", function(req, res) {
 });
 
 // Route to add a Note to an Article
-router.post("/articles/:id", function(req, res) {
+router.post("/api/articles/:id", function(req, res) {
   db.Note.create(req.body)
   .then(function(dbNote) {
     return db.Article.findOneAndUpdate(
       {_id: req.params.id},
-      {note: dbNote._id},
+      {note: dbNote.body},
       {new: true}
     );
   })
@@ -88,17 +87,15 @@ router.post("/articles/:id", function(req, res) {
   });
 });
 
-
-
 // Route to delete a Note attached to an Article
-router.get("/articles/delete/:id", function(req, res) {
-  db.Note.deleteOne({ _id: req.params.id }, function(err, deleted) {
-    if (err) {
-      res.send(err);
-    } else {
-      res.send(deleted)
-    }
-  })
-})
+// router.get("/api/articles/delete/:id", function(req, res) {
+//   db.Note.deleteOne({ _id: req.params.id }, function(err, deleted) {
+//     if (err) {
+//       res.send(err);
+//     } else {
+//       res.send(deleted)
+//     }
+//   })
+// })
 
 module.exports = router
