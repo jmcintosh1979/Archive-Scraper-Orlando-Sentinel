@@ -23,7 +23,11 @@ app.set("view engine", "handlebars")
 
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/scrapeOS", { useNewUrlParser: true });
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || ("mongodb://localhost/scrapeOS", { useNewUrlParser: true });
+
+mongoose.connect(MONGODB_URI);
+
 
 // Start the server
 app.listen(PORT, function() {

@@ -16,7 +16,7 @@ $.getJSON("/api/articles", function(data) {
 })
 
 $(document).on("click", "button", function() {
-  $("notes").empty();
+  $("#notes").empty();
 
   let thisNote = $(this).attr("data-id")
 
@@ -25,7 +25,6 @@ $(document).on("click", "button", function() {
     url: "/api/articles/" + thisNote
   }).then(function(data) {
     console.log(data)
-    $("#notes").append(`<h2>${data.tile}<h2>`)
     $("#notes").append(`<input id="titleinput" name="title">`)
     $("#notes").append(`<textarea id="bodyinput" name="body"></textarea>`)
     $("#notes").append(`<button class="btn btn-info" data-id="${data._id}" id="savenote">Save Note</button>`)
